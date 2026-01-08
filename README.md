@@ -29,7 +29,7 @@ A tiny PowerShell helper that searches your local Scoop buckets instantly.
 2) If a search returns nothing, it runs `scoop update`, rescans changed buckets, and tries again.
 3) Buckets are tracked by their git hash; only changed buckets are rescanned.
 
-## Optional: profile helper
+## Optional
 
 ```powershell
 function scoop-search { & "C:\Users\Fahim\Git\fast-scoop-search\Scoop-Search.ps1" @args }
