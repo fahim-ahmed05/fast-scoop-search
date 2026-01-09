@@ -318,11 +318,16 @@ function Update-IncrementalIndex {
     $groupedIndex = Read-PackageIndex
     $changedBuckets = @()
     $bucketHashes = @{}
+    $bucketPaths = @{}
+    
+    # Cache bucket paths
+    foreach ($bucket in $buckets) {
+        $bucketPaths[$bucket] = Join-Path $script:BucketsDir $bucket
+    }
     
     # Check git status for each bucket and detect new/changed buckets
     foreach ($bucket in $buckets) {
-        $bucketPath = Join-Path $script:BucketsDir $bucket
-        $currentHash = Get-GitCommitHash -BucketPath $bucketPath
+        $currentHash = Get-GitCommitHash -BucketPath $bucketPaths[$bucket]
         $bucketHashes[$bucket] = $currentHash
         
         # Check if bucket is new or changed
@@ -338,8 +343,7 @@ function Update-IncrementalIndex {
     }
     
     $added = 0
-    $removed = 0
-    $updated = 0
+    $remoted = 0
     
     # Process each changed bucket
     foreach ($bucket in $changedBuckets) {
