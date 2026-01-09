@@ -88,7 +88,7 @@ function Write-PackageIndex {
     )
     
     try {
-        $GroupedIndex | ConvertTo-Json -Depth 4 -Compress | Set-Content $script:IndexFile -Encoding UTF8
+        $GroupedIndex | ConvertTo-Json -Depth 3 -Compress | Set-Content $script:IndexFile -Encoding UTF8
     }
     catch {
         Write-Warning "Failed to write package index: $_"
