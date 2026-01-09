@@ -245,18 +245,28 @@ function Search-PackageIndex {
         $script:PackageCache = Get-FlattenedCache -GroupedIndex $groupedIndex
     }
     
-    $results = @()
+    # Early exit for exact match
+    if ($script:PackageCache.ContainsKey($Query)) {
+        $parts = $Query -split '/', 2
+        return @([PSCustomObject]@{
+            name    = $parts[1]
+            version = $script:PackageCache[$Query]
+            source  = $parts[0]
+        })
+    }
+    
+    $results = [System.Collections.ArrayList]::new()
     
     # Search through all packages using case-insensitive comparison
     foreach ($key in $script:PackageCache.Keys) {
         # Match against full "bucket/package" format
         if ($key.IndexOf($Query, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
             $parts = $key -split '/', 2
-            $results += [PSCustomObject]@{
+            $results.Add([PSCustomObject]@{
                 name    = $parts[1]
                 version = $script:PackageCache[$key]
                 source  = $parts[0]
-            }
+            }) | Out-Null
         }
     }
     
