@@ -245,14 +245,12 @@ function Search-PackageIndex {
         $script:PackageCache = Get-FlattenedCache -GroupedIndex $groupedIndex
     }
     
-    $queryLower = $Query.ToLowerInvariant()
     $results = @()
     
-    # Search through all packages
+    # Search through all packages using case-insensitive comparison
     foreach ($key in $script:PackageCache.Keys) {
-        $keyLower = $key.ToLowerInvariant()
         # Match against full "bucket/package" format
-        if ($keyLower.Contains($queryLower)) {
+        if ($key.IndexOf($Query, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
             $parts = $key -split '/', 2
             $results += [PSCustomObject]@{
                 name    = $parts[1]
@@ -273,23 +271,17 @@ function Scan-BucketForPackages {
         Returns: @{ "packagename" = "version", ... }
     #>
     param(
-        [string]$BucketName
+        [string]$BucketName,
+        [string]$ManifestPath
     )
     
     $packages = @{}
-    $bucketPath = Join-Path $script:BucketsDir $BucketName
     
-    if (-not (Test-Path $bucketPath)) {
+    if (-not (Test-Path $ManifestPath)) {
         return $packages
     }
     
-    # Find manifest files
-    $manifestPath = Join-Path $bucketPath "bucket"
-    if (-not (Test-Path $manifestPath)) {
-        $manifestPath = $bucketPath
-    }
-    
-    $manifestFiles = Get-ChildItem -Path $manifestPath -Filter "*.json" -File -ErrorAction SilentlyContinue
+    $manifestFiles = Get-ChildItem -Path $ManifestPath -Filter "*.json" -File -ErrorAction SilentlyContinue
     
     foreach ($file in $manifestFiles) {
         $packageName = $file.BaseName
@@ -319,10 +311,19 @@ function Update-IncrementalIndex {
     $changedBuckets = @()
     $bucketHashes = @{}
     $bucketPaths = @{}
+    $manifestPaths = @{}
     
-    # Cache bucket paths
+    # Cache bucket paths and manifest paths
     foreach ($bucket in $buckets) {
-        $bucketPaths[$bucket] = Join-Path $script:BucketsDir $bucket
+        $bucketPath = Join-Path $script:BucketsDir $bucket
+        $bucketPaths[$bucket] = $bucketPath
+        
+        # Detect manifest path (either bucket/bucket or root)
+        $manifestPath = Join-Path $bucketPath "bucket"
+        if (-not (Test-Path $manifestPath)) {
+            $manifestPath = $bucketPath
+        }
+        $manifestPaths[$bucket] = $manifestPath
     }
     
     # Check git status for each bucket and detect new/changed buckets
@@ -343,13 +344,13 @@ function Update-IncrementalIndex {
     }
     
     $added = 0
-    $remoted = 0
+    $removed = 0
+    $updated = 0
     
     # Process each changed bucket
     foreach ($bucket in $changedBuckets) {
-        $bucketPath = Join-Path $script:BucketsDir $bucket
         $currentHash = $bucketHashes[$bucket]
-        $currentPackages = Scan-BucketForPackages -BucketName $bucket
+        $currentPackages = Scan-BucketForPackages -BucketName $bucket -ManifestPath $manifestPaths[$bucket]
         
         # Get old packages for this bucket
         $oldPackages = if ($groupedIndex.ContainsKey($bucket) -and $groupedIndex[$bucket].packages) {
