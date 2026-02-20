@@ -20,7 +20,7 @@
 #>
 
 param(
-    [Parameter(Position=0, Mandatory=$false)]
+    [Parameter(Position = 0, Mandatory = $false)]
     [string]$PackageName
 )
 
@@ -117,7 +117,7 @@ function Initialize-BucketInIndex {
     
     if (-not $Index.ContainsKey($BucketName)) {
         $Index[$BucketName] = @{
-            hash = $null
+            hash     = $null
             packages = @{}
         }
     }
@@ -249,10 +249,10 @@ function Search-PackageIndex {
     if ($script:PackageCache.ContainsKey($Query)) {
         $parts = $Query -split '/', 2
         return @([PSCustomObject]@{
-            name    = $parts[1]
-            version = $script:PackageCache[$Query]
-            source  = $parts[0]
-        })
+                name    = $parts[1]
+                version = $script:PackageCache[$Query]
+                source  = $parts[0]
+            })
     }
     
     $results = [System.Collections.ArrayList]::new()
@@ -263,10 +263,10 @@ function Search-PackageIndex {
         if ($key.IndexOf($Query, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
             $parts = $key -split '/', 2
             $results.Add([PSCustomObject]@{
-                name    = $parts[1]
-                version = $script:PackageCache[$key]
-                source  = $parts[0]
-            }) | Out-Null
+                    name    = $parts[1]
+                    version = $script:PackageCache[$key]
+                    source  = $parts[0]
+                }) | Out-Null
         }
     }
     
@@ -365,7 +365,8 @@ function Update-IncrementalIndex {
         # Get old packages for this bucket
         $oldPackages = if ($groupedIndex.ContainsKey($bucket) -and $groupedIndex[$bucket].packages) {
             $groupedIndex[$bucket].packages
-        } else {
+        }
+        else {
             @{}
         }
         
@@ -438,8 +439,13 @@ if ($results.Count -eq 0) {
 
 # Display results
 if ($results.Count -eq 0) {
-    Write-Host "No packages found matching '$PackageName'" -ForegroundColor Yellow
-} else {
+    $encodedName = [System.Web.HttpUtility]::UrlEncode($PackageName)
+    $searchUrl = "https://scoop.sh/#/apps?q=$encodedName&s=0&d=1&o=false"
+    
+    Write-Host "No packages found matching '$PackageName' locally." -ForegroundColor Yellow
+    Write-Host "Search all Scoop buckets online at: $searchUrl" -ForegroundColor Cyan
+}
+else {
     $results | Format-Table -Property Name, Version, Source -AutoSize
 }
 
