@@ -389,7 +389,7 @@ function Update-IncrementalIndex {
         }
         
         # Find packages to remove (in index but not in current scan)
-        foreach ($pkgName in $oldPackages.Keys) {
+        foreach ($pkgName in @($oldPackages.Keys)) {
             if (-not $currentPackages.ContainsKey($pkgName)) {
                 Remove-PackageFromIndex -GroupedIndex $groupedIndex -Name $pkgName -Source $bucket
                 $removed++
